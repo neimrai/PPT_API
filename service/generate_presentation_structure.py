@@ -1,17 +1,29 @@
 import os
 import dotenv
+import json
+import logging
+import random
 from openai import OpenAI
 from typing import Dict, Any, List
-
+from .standardize_outline_service import StandardizedOutline
+# from Layouts import get_layout_by_name
+# 配置日志
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(levelname)s - %(message)s',
+    datefmt='%Y-%m-%d %H:%M:%S'
+)
+logger = logging.getLogger(__name__)
 
 dotenv.load_dotenv()
 
+# PPT结构设计prompt
 def get_messages(layout: Dict[str, Any], n_slides: int, outline_str: str) -> List[Dict[str, str]]:
     messages = [
             {'role': 'system',
             'content': f'''
               您是一位专业的演示设计师，拥有自由的创作空间来设计引人入胜的演示文稿。
-              {layout.to_string()}
+              {json.dumps(layout, indent=2, ensure_ascii=False) }
 
               # 设计理念 
               - 创建视觉上引人注目且多样化的演示文稿 
@@ -36,180 +48,82 @@ def get_messages(layout: Dict[str, Any], n_slides: int, outline_str: str) -> Lis
                   - 设计以实现最大影响力和留存率
 
               **相信你的设计直觉。专注于为内容和受众打造最有效的演示。**
-              根据最能满足演示目标的方式为每张 {n_slides} 张幻灯片选择布局索引。'''},
+              根据最能满足演示目标的方式为 {n_slides} 张幻灯片选择布局索引。用列表表示每个幻灯片对应的布局索引。
+              若你需要表示第1张幻灯片使用布局索引0，第2张幻灯片使用布局索引2，第3张幻灯片使用布局索引1，第4张幻灯片使用布局索引3
+              则输出列表[0, 2, 1, 3]
+
+              # 🧾【输出格式要求】：请严格使用如下列表格式进行输出，
+              [0, 2, 1, 3, 0, 1, 2, 0]
+
+              '''},
             {'role': 'user',
             'content': outline_str}
         ]
     return messages
 
 def create_openai_client():
+    logger.debug("创建OpenAI客户端")
     client = OpenAI(
         api_key=os.getenv("DASHSCOPE_API_KEY"),
         base_url="https://dashscope.aliyuncs.com/compatible-mode/v1",
     )
     return client
 
-def generate_presentation_outline(outline: Dict[str, Any], layout: Dict[str, Any]) -> List[int]:
+def generate_presentation_structure(outline: Dict[str, Any], layout: Dict[str, Any]) -> List[int]:
+    logger.info(f"开始生成演示文稿结构，标题: '{outline['title']}', 幻灯片数: {len(outline['slides'])}")
+
     client = create_openai_client()
+    
+    # 准备消息列表
+    messages = get_messages(layout, len(outline['slides']), outline.__str__())
+    logger.debug(f"已准备提示信息，系统提示长度: {len(messages[0]['content'])}字符, 用户提示长度: {len(messages[1]['content'])}字符")
+    
+    logger.info("正在调用API生成PPT结构...")
+    try:
+        completion = client.chat.completions.create(
+            model=os.getenv("MODEL"),
+            messages=messages
+        )
+        result_text = completion.choices[0].message.content
+        logger.info(f"API返回的原始文本结果: {result_text}")
+         # 解析结果文本为列表
+        try:
+            # 首先尝试使用json.loads解析
+            import re
+            
+            # 尝试提取列表部分
+            match = re.search(r'\[\s*\d+(?:\s*,\s*\d+)*\s*\]', result_text)
+            if match:
+                list_str = match.group(0)
+                result_list = json.loads(list_str)
+                logger.info(f"成功解析为列表: {result_list}")
+            else:
+                # 如果无法提取列表，尝试提取所有数字
+                numbers = re.findall(r'\d+', result_text)
+                result_list = [int(num) for num in numbers]
+                logger.info(f"从文本中提取的数字列表: {result_list}")
+            
+            # 确保列表长度与幻灯片数量一致
+            slide_count = len(outline['slides'])
+            if len(result_list) != slide_count:
+                logger.warning(f"生成的列表长度 {len(result_list)} 与幻灯片数 {slide_count} 不匹配，进行调整")
+                # 如果列表过短，生成随机索引
+                if len(result_list) < slide_count:
+                    last_item = random.randint(0, len(result_list) - 1)
+                    result_list.extend([last_item] * (slide_count - len(result_list)))
+                # 如果列表过长，截断
+                if len(result_list) > slide_count:
+                    result_list = result_list[:slide_count]
+            
+            return result_list
+            
+        except Exception as e:
+            logger.error(f"解析API返回结果时出错: {str(e)}")
+            # 生成默认列表
+            default_list = [0] * len(outline['slides'])
+            logger.warning(f"使用默认列表: {default_list}")
+            return default_list
+    except Exception as e:
+        logger.error(f"生成PPT结构时出错: {str(e)}")
+        raise
 
-    #消息列表
-    messages = get_messages(layout, len(outline["slides"]), outline.to_string())
-    completion = client.chat.completions.create(
-        model=os.getenv("MODEL"),
-        messages=messages
-    )
-    return completion.choices[0].message.content
-
-        
-if __name__ == "__main__":
-   outline = '''{
-  "title": "南澳岛旅游攻略：碧海蓝天与潮汕风情的完美融合",
-  "total_pages": 5,
-  "page_count_mode": "final",
-  "slides": [
-    {
-      "page_number": 1,
-      "title": "封面页",
-      "content_points": [
-        "南澳岛旅游攻略",
-        "探索粤东海上明珠",
-        "2025年最新玩法与贴士"
-      ],
-      "slide_type": "title",
-      "type": "cover",
-      "description": "以视觉冲击力强的封面吸引观众注意，展现南澳岛的自然美景与文化特色。",
-      "chart_config": {}
-    },
-    {
-      "page_number": 2,
-      "title": "目录页",
-      "content_points": [
-        "十大必去景点",
-        "八大高性价比餐厅",
-        "交通与住宿指南",
-        "特色玩法推荐",
-        "避坑与实用建议"
-      ],
-      "slide_type": "content",
-      "type": "menu",
-      "description": "清晰展示PPT结构，帮助观众快速了解内容分布。",
-      "chart_config": {}
-    },
-    {
-      "page_number": 3,
-      "title": "十大必去景点揭秘",
-      "content_points": [
-        "青澳湾：粤东最美沙滩",
-        "环岛公路：自驾天堂",
-        "三囱崖灯塔：浪漫地标",
-        "大鹏山：登高望远",
-        "金银岛：海盗传说"
-      ],
-      "slide_type": "content",
-      "type": "points",
-      "description": "介绍南澳岛核心景点，突出其自然与人文特色。",
-      "chart_config": {
-        "type": "bar",
-        "data": {
-          "labels": ["青澳湾", "环岛公路", "三囱崖灯塔", "大鹏山", "金银岛"],
-          "datasets": [
-            {
-              "label": "游客评分（满分5分）",
-              "data": [4.9, 4.7, 4.8, 4.6, 4.5],
-              "backgroundColor": "#4ECDC4"
-            }
-          ]
-        },
-        "options": {
-          "plugins": {
-            "title": {
-              "display": true,
-              "text": "南澳岛十大景点游客评分"
-            }
-          }
-        }
-      }
-    },
-    {
-      "page_number": 4,
-      "title": "八大高性价比餐厅推荐",
-      "content_points": [
-        "阿来小炒：海鲜排档之王",
-        "许大姐的菜：家常风味",
-        "回归线咖啡：海边文艺",
-        "成发牛肉火锅：潮汕盛宴",
-        "然记糖水店：甜蜜记忆"
-      ],
-      "slide_type": "content",
-      "type": "points",
-      "description": "推荐本地特色餐厅，突出性价比与地道风味。",
-      "chart_config": {
-        "type": "pie",
-        "data": {
-          "labels": ["海鲜", "牛肉火锅", "甜品", "家常菜", "咖啡"],
-          "datasets": [
-            {
-              "label": "美食偏好分布",
-              "data": [40, 25, 15, 10, 10],
-              "backgroundColor": ["#FF6B6B", "#4ECDC4", "#FFD93D", "#9467BD", "#E377C2"]
-            }
-          ]
-        },
-        "options": {
-          "plugins": {
-            "title": {
-              "display": true,
-              "text": "南澳岛美食类型偏好"
-            }
-          }
-        }
-      }
-    },
-    {
-      "page_number": 5,
-      "title": "交通住宿与避坑指南",
-      "content_points": [
-        "自驾技巧：限速与观景位",
-        "轮渡提示：飞鱼伴航彩蛋",
-        "住宿推荐：悬崖民宿与渔村",
-        "避坑建议：海鲜陷阱与拍照雷区"
-      ],
-      "slide_type": "conclusion",
-      "type": "summary",
-      "description": "总结实用信息，帮助游客高效规划行程。",
-      "chart_config": {
-        "type": "radar",
-        "data": {
-          "labels": ["交通", "住宿", "饮食", "安全", "体验"],
-          "datasets": [
-            {
-              "label": "旅行满意度评估",
-              "data": [4.8, 4.7, 4.9, 4.6, 4.5],
-              "borderColor": "#FF6B6B",
-              "backgroundColor": "rgba(255, 107, 107, 0.2)"
-            }
-          ]
-        },
-        "options": {
-          "plugins": {
-            "title": {
-              "display": true,
-              "text": "南澳岛旅行满意度雷达图"
-            }
-          }
-        }
-      }
-    }
-  ],
-  "metadata": {
-    "scenario": "南澳岛旅游攻略展示，适用于自由行游客、旅游从业者、社交媒体内容创作者等。",
-    "language": "zh",
-    "total_slides": 5,
-    "generated_with_ai": true,
-    "enhanced_with_charts": true,
-    "content_depth": "professional"
-  }
-}'''
-   
-   result = generate_presentation_outline(outline)
-   print(result)

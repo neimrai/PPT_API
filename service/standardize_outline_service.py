@@ -6,12 +6,8 @@ from dataclasses import dataclass
 dotenv.load_dotenv()
 logger = logging.getLogger(__name__)
 
-@dataclass
-class StandardizedOutline:
-    title: str
-    slides: List[Dict[str, Any]]
-    metadata: Dict[str, Any]
-def _standardize_outline(outline_data: Dict[str, Any]) -> StandardizedOutline:
+
+def _standardize_outline(outline_data: Dict[str, Any]) -> Dict[str, Any]:
     """标准化大纲格式"""
     # 提取基本信息
     title = outline_data.get("title", "")
@@ -36,17 +32,16 @@ def _standardize_outline(outline_data: Dict[str, Any]) -> StandardizedOutline:
         standardized_slides.append(standardized_slide)
 
     # 标准化metadata
-    standard_metadata = {
+    standardized_metadata = {
         "language": metadata.get("language", "zh"),
         "total_slides": len(standardized_slides),
         "generated_with_ai": True
     }
-
-    return StandardizedOutline(
-        title=title,
-        slides=standardized_slides,
-        metadata=standard_metadata
-    )
+    return {
+        "title": title,
+        "slides": standardized_slides,
+        "metadata": standardized_metadata
+    }
 
 def _validate_outline(outline_data: Dict[str, Any]) -> bool:
     """验证大纲数据的完整性和正确性"""
@@ -102,16 +97,11 @@ def parse_outline_json(ai_response: str) -> Optional[Dict[str, Any]]:
                 if _validate_outline(json_data):
                     # 标准化处理
                     standardized = _standardize_outline(json_data)
-                    # 转换为字典并返回
-                    return {
-                        "title": standardized.title,
-                        "slides": standardized.slides,
-                        "metadata": standardized.metadata
-                    }
-                return None
+                    return standardized
             except json.JSONDecodeError as e:
                 logger.warning(f"Failed to parse JSON: {e}")
                 return None
     except Exception as e:
         logger.error(f"Error in parse_outline_json: {e}")
         return None
+
