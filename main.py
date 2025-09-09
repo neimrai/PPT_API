@@ -1,16 +1,27 @@
 import os
-from service.generate_presentation_outline import generate_presentation_outline
-from service.standardize_outline_service import parse_outline_json
-from service.generate_presentation_structure import generate_presentation_structure
-from models.presentation_model import PresentationModel
-import service.Layouts as Layouts
+import asyncio
+
+from api.service.generate_presentation_outline import generate_presentation_outline
+from api.service.standardize_outline_service import parse_outline_json
+from api.service.generate_presentation_structure import generate_presentation_structure
+from api.service.image_generation_service import ImageGenerationService
+from api.service.icon_finder_service import IconFinderService
+from api.service.generate_slide_content import generate_slide_content
+from api.utils.process_slides import process_slide_and_fetch_assets
+
+import api.service.Layouts as Layouts
+from typing import Dict, Any, List, Optional
+
+
+from api.models.presentation_model import PresentationModel
+from api.models.slides import SlideModel
 import random
 import sys
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 if __name__ == "__main__":
     
-    prompt="纪念中国人民抗日战争暨世界反法西斯战争胜利80周年",
-    n_slides=5,
+    prompt="中国反法西斯胜利80周年，9月3日阅兵仪式",
+    n_slides=3,
     language="zh",
     # 1.创建PPT大纲
     outline = generate_presentation_outline(
@@ -30,6 +41,8 @@ if __name__ == "__main__":
 
     # 3.匹配模版
     layout = Layouts.get_layout_by_name("testcmy")
+    print("-------------选择的布局-----------------")
+    print(layout)
     layout_len = len(layout["slides"])
     # 4.生成PPT结构
     outline_structure = generate_presentation_structure(outline_standardized, layout)
@@ -46,13 +59,53 @@ if __name__ == "__main__":
         prompt=prompt,
         n_slides=n_slides,
         language=language,
-        outlines=outline_standardized.model_dump(),
+        outlines=outline_standardized,
         layout=layout,
         structure=outline_structure,
     )
-    # 6.生成图片
-
-    image_generation_service = ImageGenerationService(os.getenv("PEXELS_API_KEY"))
+    # 6.集成图片生成和图标搜索功能
+    image_generation_service = ImageGenerationService()
     icon_finder_service = IconFinderService()
     async_asset_generation_tasks = []
     
+    # 7.根据幻灯片布局和大纲生成结构化内容
+    slides: List[SlideModel] = []          # 存储所有幻灯片模型
+    slide_contents: List[dict] = []        # 存储所有幻灯片内容
+    for i, slide_layout_index in enumerate(outline_structure):
+        # 单页幻灯片布局
+        slide_layout = layout["slides"][slide_layout_index] if slide_layout_index < layout_len else None
+        print(f"第{i+1}页幻灯片选择的布局: {slide_layout}")
+        # 根据布局和大纲生成幻灯片内容
+        slide_content = generate_slide_content(
+          slide_layout=slide_layout,
+          language=language,
+          outline=outline_standardized["slides"][i] if i < len(outline_standardized) else None
+        )
+        print(f"第{i+1}页幻灯片内容: {slide_content}")
+        
+        
+        slide = SlideModel(
+            id=presentation_id,
+            layout_group=layout["name"] if layout else None, # 布局名称
+            layout=slide_layout["id"] if slide_layout else None, # 布局ID
+            index=i,
+            speaker_notes=slide_content.get("__speaker_note__",""), # 演讲者注释
+            content=slide_content
+        )
+        # 添加异步任务到任务列表
+        async_asset_generation_tasks.append(
+          process_slide_and_fetch_assets(
+            image_generation_service,
+            icon_finder_service,
+            slide
+          )
+        )
+        slides.append(slide)
+        slide_contents.append(slide_content)
+        
+        
+        # generated_assets_lists = asyncio.gather(*async_asset_generation_tasks)
+        # generated_assets = []
+        # for assets_list in generated_assets_lists:
+        #     generated_assets.extend(assets_list)
+        

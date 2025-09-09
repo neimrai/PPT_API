@@ -1,0 +1,18 @@
+{
+  "name": "ppt-api-scripts",
+  "private": true,
+  "dependencies": {
+    "@babel/core": "^7.x",
+    "@babel/plugin-transform-modules-commonjs": "^7.x",
+    "@babel/preset-react": "^7.x",
+    "@babel/preset-typescript": "^7.x",
+    "@babel/standalone": "^7.28.4",
+    "recharts": "^2.15.4",
+    "ts-morph": "^x.x.x",
+    "zod": "^3.x",
+    "zod-to-json-schema": "^3.x"
+  },
+  "devDependencies": {
+    "typescript": "^5.9.2"
+  }
+}
