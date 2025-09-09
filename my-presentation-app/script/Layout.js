@@ -32,7 +32,24 @@ const compileLayout = (layoutCode) => {
     "Recharts",
     `
     const z = _z;
-    const ImageSchema = z.object({ __image_url__: z.string(), __image_prompt__: z.string() });
+    
+    const ImageSchema = z.object({
+    __image_url__: z.url().meta({
+        description: "URL to image",
+    }),
+    __image_prompt__: z.string().meta({
+        description: "Prompt used to generate the image",
+    }).min(10).max(50),
+    })
+
+    const IconSchema = z.object({
+        __icon_url__: z.string().meta({
+            description: "URL to icon",
+        }),
+        __icon_query__: z.string().meta({
+            description: "Query used to search the icon",
+        }).min(5).max(20),
+    })
     // 暴露常用的Recharts组件给编译后的布局
     const { ResponsiveContainer, LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, PieChart, Pie, Cell, AreaChart, Area, RadarChart, Radar, PolarGrid, PolarAngleAxis, PolarRadiusAxis } = Recharts || {};
       ${compiled}
@@ -86,25 +103,31 @@ const extractLayoutInfo = (filePath) => {
  */
 const processLayouts = (dirPath) => {
   const files = fs.readdirSync(dirPath);
-  const layouts = [];
+  // console.log("Files in directory:", files); // 处理的文件列表
+  const layouts = {};
 
   files.forEach((file) => {
     if (file.endsWith(".tsx") || file.endsWith(".ts")) {
       const filePath = path.join(dirPath, file);
       try {
         const layoutInfo = extractLayoutInfo(filePath);
-        layouts.push(layoutInfo);
+        layouts[layoutInfo.id] = layoutInfo;
       } catch (error) {
         console.error(`Error processing file ${file}:`, error.message);
       }
     }
   });
 
-  return layouts;
+  return JSON.stringify(layouts, null, 2);
 };
 
 // Example usage
-const layoutDir = path.resolve(__dirname, "../presentation-templates/classic");
-const layouts = processLayouts(layoutDir);
-console.log("Extracted Layouts:", layouts);
-console.log("Extracted Layouts:", JSON.stringify(layouts, null, 2));
+// const layoutDir = path.resolve(__dirname, "../presentation-templates/test");
+// const layouts = processLayouts(layoutDir);
+// console.log("Extracted Layouts:", layouts);
+// console.log("Extracted Layouts:", JSON.stringify(layouts, null, 2));
+
+const layoutDir2 = process.argv[2];
+const layouts2 = processLayouts(layoutDir2);
+console.log(layouts2);
+// console.log("Extracted Layouts:", JSON.stringify(layouts2, null, 2));

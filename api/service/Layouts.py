@@ -73,7 +73,19 @@ def scan_builtin_layouts() -> List[Dict[str, Any]]:
 
 def extract_schema_from_file(file_path: Path) -> Dict[str, Any]:
     """从文件中提取schema信息"""
-    pass
+    try:
+        result = subprocess.run(
+          ['node', 'd:\\Users\\chenmengyue\\ppt_api\\my-presentation-app\\script\\Layout.js', str(file_path)],
+          capture_output=True,
+          text=True,
+          check=True
+      )
+      # 解析 JSON 输出
+        layouts = json.loads(result.stdout)
+        return layouts
+    except subprocess.CalledProcessError as e:
+        print(f"Error calling Node.js script: {e.stderr}")
+        return None
 
 def get_layout_by_name(layout_name: str, session=None) -> Dict[str, Any]:
     """获取指定名称的布局"""
@@ -116,31 +128,15 @@ def get_layout_by_name(layout_name: str, session=None) -> Dict[str, Any]:
     slides = []
     
     # 处理内置布局
-    layouts_directory = Path("my-app/presentation-templates") / layout_name
+    layouts_directory = Path("my-presentation-app/presentation-templates") / layout_name
     logger.debug(f"正在处理布局目录: {layouts_directory}")
     
-    for file_name in target_group["files"]:
-        file_path = layouts_directory / file_name
-        logger.debug(f"处理布局文件: {file_path}")
-        
-        # 生成ID (去掉.tsx后缀)
-        slide_id = file_name.replace('.tsx', '')
-        
-        # 使用正则表替换驼峰命名为空格分隔，作为name
-        name = re.sub(r'([A-Z])', r' \1', slide_id).strip()
-        
-        # 提取schema和description
-        schema_info = extract_schema_from_file(file_path)
-        
-        slides.append({
-            "id": slide_id,
-            "name": name,
-            "description": schema_info["description"],
-            "json_schema": schema_info["json_schema"]
-        })
     
+    
+    slides = extract_schema_from_file(layouts_directory)
+
     logger.info(f"布局 {layout_name} 存在 {len(slides)} 个幻灯片")
-    
+
     # 4. 返回符合预期格式的数据
     return {
         "name": layout_name,
@@ -149,11 +145,14 @@ def get_layout_by_name(layout_name: str, session=None) -> Dict[str, Any]:
     }
 
 if __name__ == "__main__":
-    all_layouts = scan_builtin_layouts()
-    print(json.dumps(all_layouts, indent=2, ensure_ascii=False))
+    # all_layouts = scan_builtin_layouts()
+    # print(json.dumps(all_layouts, indent=2, ensure_ascii=False))
     # general_layout = get_layout_by_name("classic")
     
-    # 测试单个文件的 schema 提取
-      # file_path = 'my-app/presentation-templates/testcmy/Type6SlideLayout.tsx'
-      # result = extract_schema_from_file(file_path)
-      # print(json.dumps(result, indent=2, ensure_ascii=False))
+    # info = extract_schema_from_file(Path("my-presentation-app/presentation-templates/test"))
+    # print(info)
+    # print(json.dumps(info, indent=2, ensure_ascii=False))
+    layout = get_layout_by_name("test")
+    print("Final Extracted Layout:", layout)
+    print(json.dumps(layout, indent=2, ensure_ascii=False))
+  
