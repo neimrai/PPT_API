@@ -24,18 +24,18 @@ async def process_slide_and_fetch_assets(
     for image_path in image_paths:
         __image_prompt__parent = get_dict_at_path(slide.content, image_path)
         async_tasks.append(
-            image_generation_service.generate_image(
-                ImagePrompt(
-                    prompt=__image_prompt__parent["__image_prompt__"],
-                )
+            asyncio.to_thread(
+                image_generation_service.get_image,
+                __image_prompt__parent["__image_prompt__"]
             )
         )
     
     for icon_path in icon_paths:
         __icon_query__parent = get_dict_at_path(slide.content, icon_path)
-        async_tasks.append(
-            icon_finder_service.search_icons(__icon_query__parent["__icon_query__"])
-        )
+        asyncio.to_thread(
+                icon_finder_service.search_icons,
+                __icon_query__parent["__icon_query__"]
+            )
     # 执行所有异步任务
     results = await asyncio.gather(*async_tasks)
     results.reverse()
@@ -120,7 +120,7 @@ async def process_old_and_new_slides_and_fetch_assets(
             continue
 
         async_image_fetch_tasks.append(
-            image_generation_service.generate_image(
+            image_generation_service.get_image(
                 ImagePrompt(
                     prompt=new_image["__image_prompt__"],
                 )

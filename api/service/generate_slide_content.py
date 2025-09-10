@@ -97,8 +97,6 @@ def generate_slide_content(slide_layout,language, outline):
   response_schema = remove_fields_from_schema(
         slide_layout["json_schema"], ["__image_url__", "__icon_url__"]
     )
-  print("移除__image_url__后的schema:")
-  print(response_schema)
   
   response_schema = add_field_in_schema(
         response_schema,
@@ -112,8 +110,6 @@ def generate_slide_content(slide_layout,language, outline):
         },
         True,
     )
-  print("添加__speaker_note__后的schema:")
-  print(response_schema)
   response_format={ 
         "type": "json_schema",
         "json_schema": {

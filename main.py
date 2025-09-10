@@ -86,7 +86,6 @@ if __name__ == "__main__":
         print(f"第{i+1}页幻灯片内容: {slide_content}")
         # 将 JSON 字符串解析为字典
         slide_content = json.loads(slide_content) if isinstance(slide_content, str) else slide_content
-
         
         slide = SlideModel(
             id=presentation_id,
@@ -96,29 +95,62 @@ if __name__ == "__main__":
             speaker_notes=slide_content.get("__speaker_note__",""), # 演讲者注释
             content=slide_content
         )
-        # 添加异步任务到任务列表
-        async_asset_generation_tasks.append(
-          process_slide_and_fetch_assets(
+        # 添加到列表
+        slides.append(slide)
+        slide_contents.append(slide_content)
+        
+        # 添加异步任务
+        task = process_slide_and_fetch_assets(
             image_generation_service,
             icon_finder_service,
             slide
-          )
         )
-        # 将当前幻灯片对象添加到幻灯片列表
-        slides.append(slide)
-        # 将幻灯片内容添加到内容列表
-        slide_contents.append(slide_content)
-        
-    # 并行执行所有资源生成任务    
-    generated_assets_lists = asyncio.gather(*async_asset_generation_tasks)
-    generated_assets = []
-    # 将每个任务返回的资源列表合并到总资源列表中
-    for assets_list in generated_assets_lists:
-        generated_assets.extend(assets_list)
-    
-    # 9. Export
-    presentation_and_path = export_presentation(
-        presentation_id, presentation.title or str(uuid.uuid4()), "pptx"
-    )
-    print(**presentation_and_path.model_dump(),
-        edit_path=f"/presentation?id={presentation_id}",)    
+        async_asset_generation_tasks.append(task)
+ 
+
+    # 8. 执行异步任务
+
+    async def run_async_tasks():
+        try:
+            generated_assets_lists = await asyncio.gather(*async_asset_generation_tasks)
+            generated_assets = []
+            for assets_list in generated_assets_lists:
+                if assets_list:  # 确保 assets_list 不为 None
+                    generated_assets.extend(assets_list)
+            return generated_assets
+        except Exception as e:
+            print(f"执行异步任务时出错: {str(e)}")
+            return []
+
+    # 运行异步任务
+    if async_asset_generation_tasks:
+        generated_assets = asyncio.run(run_async_tasks())
+    else:
+        generated_assets = []
+
+
+    # 9. 导出演示文稿
+    try:
+        # 确保有标题
+        presentation_title = outline_standardized.get("title", "Untitled Presentation")
+        # 导出演示文稿
+        presentation_result = export_presentation(
+            presentation_id=presentation_id,
+            title=presentation_title,
+            format_type="pptx"
+        )
+        # 打印结果
+        if presentation_result:
+            result = {
+                "presentation_id": presentation_id,
+                "title": presentation_title,
+                "file_path": presentation_result.file_path if hasattr(presentation_result, 'file_path') else None,
+                "edit_path": f"/presentation?id={presentation_id}"
+            }
+            print("演示文稿导出成功:")
+            print(json.dumps(result, indent=2, ensure_ascii=False))
+        else:
+            print("演示文稿导出失败")
+            
+    except Exception as e:
+        print(f"导出演示文稿时出错: {str(e)}") 
