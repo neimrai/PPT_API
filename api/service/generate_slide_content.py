@@ -34,7 +34,7 @@ Generate structured slide based on provided outline, follow mentioned steps and 
 """
 #系统中文提示词
 system_prompt_zh = """
-根据提供的大纲生成结构化幻灯片，遵循提到的步骤和注意事项，并提供结构化输出。
+根据提供的大纲生成结构化幻灯片，遵循提到的步骤和注意事项，并返回一个 JSON 对象。
 
     # 步骤
     1. 分析大纲。
@@ -54,14 +54,23 @@ system_prompt_zh = """
 # 用户提示词
 def get_user_prompt(language, outline):
   return f"""
- ## Icon Query And Image Prompt Language
-        English
+ Icon Query And Image Prompt Language: English
 
-        ## Slide Content Language
-        {language}
+## Slide Content Language
+{language}
 
-        ## Slide Outline
-        {outline}
+## Slide Outline
+{outline}
+
+## Output Requirements
+You must generate a complete JSON object that strictly follows the specified schema. 
+Include all required fields with appropriate content based on the slide outline and language. 
+Ensure the JSON output is valid and properly formatted.
+
+Generate a complete JSON object that strictly follows the specified schema. 
+Output ONLY the raw JSON without any markdown formatting, code blocks, or additional text.
+Do not include ```json or any other formatting markers.
+The response should be pure JSON only.
   """
 def create_openai_client():
     logger.debug("创建OpenAI客户端")
@@ -105,16 +114,20 @@ def generate_slide_content(slide_layout,language, outline):
     )
   print("添加__speaker_note__后的schema:")
   print(response_schema)
+  response_format={ 
+        "type": "json_schema",
+        "json_schema": {
+          "name": "slide_schema",
+          "schema": response_schema
+        }
+    }
+  print("最终的response_format:")
+  print(response_format)
   try:
       completion = client.chat.completions.create(
           model=os.getenv("MODEL"),
           messages=messages,
-          response_format=(
-                {
-                    "type": "json_schema",
-                    "json_schema": response_schema
-                }
-            )
+          response_format=response_format
           )
       result = completion.choices[0].message.content
       logger.info("生成幻灯片内容成功✅")
@@ -122,3 +135,4 @@ def generate_slide_content(slide_layout,language, outline):
   except Exception as e:
       logger.error(f"生成幻灯片内容时出错: {str(e)}")
       raise
+

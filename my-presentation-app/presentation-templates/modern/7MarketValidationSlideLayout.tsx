@@ -27,7 +27,7 @@ const marketValidationSchema = z.object({
     .min(50)
     .max(400)
     .default(
-      "It’s a market testing stage to ensure that the products produced by the company can be accepted and effectively used by the broad market. For start-up companies, we can use data already achieved by similar products from other companies.",
+      "It’s a market testing stage to ensure that the products produced by the company can be accepted and effectively used by the broad market. For start-up companies, we can use data already achieved by similar products from other companies."
     )
     .meta({
       description:
@@ -48,7 +48,7 @@ const marketValidationSchema = z.object({
         value: z.number().min(0).meta({
           description: "Numeric value for the metric",
         }),
-      }),
+      })
     )
     .min(2)
     .max(5)

@@ -4,6 +4,10 @@ version = "0.1.0"
 description = "Add your description here"
 requires-python = ">=3.11"
 dependencies = [
+    "aiohttp>=3.12.15",
     "chromadb==1.0.20",
+    "fastapi>=0.116.1",
     "openai>=1.104.2",
+    "pathvalidate>=3.3.1",
+    "python-pptx>=1.0.2",
 ]

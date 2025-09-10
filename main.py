@@ -1,6 +1,6 @@
 import os
 import asyncio
-
+import json
 from api.service.generate_presentation_outline import generate_presentation_outline
 from api.service.standardize_outline_service import parse_outline_json
 from api.service.generate_presentation_structure import generate_presentation_structure
@@ -8,7 +8,7 @@ from api.service.image_generation_service import ImageGenerationService
 from api.service.icon_finder_service import IconFinderService
 from api.service.generate_slide_content import generate_slide_content
 from api.utils.process_slides import process_slide_and_fetch_assets
-
+from api.utils.export_utils import export_presentation
 import api.service.Layouts as Layouts
 from typing import Dict, Any, List, Optional
 
@@ -20,7 +20,7 @@ import sys
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 if __name__ == "__main__":
     
-    prompt="中国反法西斯胜利80周年，9月3日阅兵仪式",
+    prompt="Ai绘图模型Nano Banana",
     n_slides=3,
     language="zh",
     # 1.创建PPT大纲
@@ -40,13 +40,14 @@ if __name__ == "__main__":
         exit(1)
 
     # 3.匹配模版
-    layout = Layouts.get_layout_by_name("testcmy")
     print("-------------选择的布局-----------------")
+    layout = Layouts.get_layout_by_name("test")
     print(layout)
     layout_len = len(layout["slides"])
+    
     # 4.生成PPT结构
-    outline_structure = generate_presentation_structure(outline_standardized, layout)
     print("-------------PPT结构-----------------")
+    outline_structure = generate_presentation_structure(outline_standardized, layout)
     print(outline_structure)
 
 
@@ -64,6 +65,7 @@ if __name__ == "__main__":
         structure=outline_structure,
     )
     # 6.集成图片生成和图标搜索功能
+    print("-------------集成图片生成和图标搜索功能-----------------")
     image_generation_service = ImageGenerationService()
     icon_finder_service = IconFinderService()
     async_asset_generation_tasks = []
@@ -82,7 +84,9 @@ if __name__ == "__main__":
           outline=outline_standardized["slides"][i] if i < len(outline_standardized) else None
         )
         print(f"第{i+1}页幻灯片内容: {slide_content}")
-        
+        # 将 JSON 字符串解析为字典
+        slide_content = json.loads(slide_content) if isinstance(slide_content, str) else slide_content
+
         
         slide = SlideModel(
             id=presentation_id,
@@ -100,12 +104,21 @@ if __name__ == "__main__":
             slide
           )
         )
+        # 将当前幻灯片对象添加到幻灯片列表
         slides.append(slide)
+        # 将幻灯片内容添加到内容列表
         slide_contents.append(slide_content)
         
-        
-        # generated_assets_lists = asyncio.gather(*async_asset_generation_tasks)
-        # generated_assets = []
-        # for assets_list in generated_assets_lists:
-        #     generated_assets.extend(assets_list)
-        
+    # 并行执行所有资源生成任务    
+    generated_assets_lists = asyncio.gather(*async_asset_generation_tasks)
+    generated_assets = []
+    # 将每个任务返回的资源列表合并到总资源列表中
+    for assets_list in generated_assets_lists:
+        generated_assets.extend(assets_list)
+    
+    # 9. Export
+    presentation_and_path = export_presentation(
+        presentation_id, presentation.title or str(uuid.uuid4()), "pptx"
+    )
+    print(**presentation_and_path.model_dump(),
+        edit_path=f"/presentation?id={presentation_id}",)    

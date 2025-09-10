@@ -93,6 +93,7 @@ const processLayouts = (dirPath) => {
       const filePath = path.join(dirPath, file);
       try {
         const layoutInfo = extractLayoutInfo(filePath);
+        console.log(`Processed layout: ${layoutInfo.name}`);
         layouts.push(layoutInfo);
       } catch (error) {
         console.error(`Error processing file ${file}:`, error.message);

@@ -104,14 +104,14 @@ const extractLayoutInfo = (filePath) => {
 const processLayouts = (dirPath) => {
   const files = fs.readdirSync(dirPath);
   // console.log("Files in directory:", files); // 处理的文件列表
-  const layouts = {};
+  const layouts = [];
 
   files.forEach((file) => {
     if (file.endsWith(".tsx") || file.endsWith(".ts")) {
       const filePath = path.join(dirPath, file);
       try {
         const layoutInfo = extractLayoutInfo(filePath);
-        layouts[layoutInfo.id] = layoutInfo;
+        layouts.push(layoutInfo);
       } catch (error) {
         console.error(`Error processing file ${file}:`, error.message);
       }

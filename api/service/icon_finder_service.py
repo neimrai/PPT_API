@@ -2,8 +2,13 @@ import json
 import chromadb
 import os
 from chromadb.config import Settings
+import logging
 from chromadb.utils.embedding_functions import ONNXMiniLM_L6_V2
-
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(levelname)s - %(message)s',
+    datefmt='%Y-%m-%d %H:%M:%S'
+)
 
 class IconFinderService:
     def __init__(self):
@@ -13,9 +18,8 @@ class IconFinderService:
         self.client = chromadb.PersistentClient(
             path="chroma", settings=Settings(anonymized_telemetry=False)
         )
-        print('正在初始化图标集合...')
         self._initialize_icons_collection()
-        print('图标集合初始化完成。')
+        logging.info("图标搜索服务已初始化")
     
     def _initialize_icons_collection(self):
         # 初始化嵌入函数

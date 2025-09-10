@@ -144,7 +144,7 @@ def get_layout_by_name(layout_name: str, session=None) -> Dict[str, Any]:
         "slides": slides
     }
 
-if __name__ == "__main__":
+# if __name__ == "__main__":
     # all_layouts = scan_builtin_layouts()
     # print(json.dumps(all_layouts, indent=2, ensure_ascii=False))
     # general_layout = get_layout_by_name("classic")
@@ -152,7 +152,9 @@ if __name__ == "__main__":
     # info = extract_schema_from_file(Path("my-presentation-app/presentation-templates/test"))
     # print(info)
     # print(json.dumps(info, indent=2, ensure_ascii=False))
-    layout = get_layout_by_name("test")
-    print("Final Extracted Layout:", layout)
-    print(json.dumps(layout, indent=2, ensure_ascii=False))
+    
+    
+    # layout = get_layout_by_name("test")
+    # print("Final Extracted Layout:", layout)
+    # print(json.dumps(layout, indent=2, ensure_ascii=False))
   
