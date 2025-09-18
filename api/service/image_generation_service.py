@@ -29,7 +29,7 @@ class ImageGenerationService:
             return "Request failed"
           
         data = response.json()
-        print(data)
+        # print(data)
         
         # Check if the response contains any photos
         if not data.get("photos"):

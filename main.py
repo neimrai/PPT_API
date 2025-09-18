@@ -1,28 +1,38 @@
 import os
 import asyncio
 import json
+import logging
 from api.service.generate_presentation_outline import generate_presentation_outline
 from api.service.standardize_outline_service import parse_outline_json
 from api.service.generate_presentation_structure import generate_presentation_structure
 from api.service.image_generation_service import ImageGenerationService
 from api.service.icon_finder_service import IconFinderService
 from api.service.generate_slide_content import generate_slide_content
+
 from api.utils.process_slides import process_slide_and_fetch_assets
-from api.utils.export_utils import export_presentation
+from api.utils.asset_directory_utils import get_exports_directory
+
 import api.service.Layouts as Layouts
 from typing import Dict, Any, List, Optional
 
 
 from api.models.presentation_model import PresentationModel
 from api.models.slides import SlideModel
+from api.models.pptx_models import PptxPresentationModel
+
 import random
 import sys
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(levelname)s - %(message)s',
+    datefmt='%Y-%m-%d %H:%M:%S'
+)
 if __name__ == "__main__":
     
-    prompt="Ai绘图模型Nano Banana",
-    n_slides=3,
-    language="zh",
+    prompt="2025年热门悬疑作品概述"
+    n_slides=10
+    language="zh"
     # 1.创建PPT大纲
     outline = generate_presentation_outline(
       prompt=prompt,
@@ -75,13 +85,13 @@ if __name__ == "__main__":
     slide_contents: List[dict] = []        # 存储所有幻灯片内容
     for i, slide_layout_index in enumerate(outline_structure):
         # 单页幻灯片布局
-        slide_layout = layout["slides"][slide_layout_index] if slide_layout_index < layout_len else None
+        slide_layout = layout["slides"][slide_layout_index]
         print(f"第{i+1}页幻灯片选择的布局: {slide_layout}")
         # 根据布局和大纲生成幻灯片内容
         slide_content = generate_slide_content(
           slide_layout=slide_layout,
           language=language,
-          outline=outline_standardized["slides"][i] if i < len(outline_standardized) else None
+          outline=outline_standardized["slides"][i]
         )
         print(f"第{i+1}页幻灯片内容: {slide_content}")
         # 将 JSON 字符串解析为字典
@@ -98,18 +108,17 @@ if __name__ == "__main__":
         # 添加到列表
         slides.append(slide)
         slide_contents.append(slide_content)
-        
+    
         # 添加异步任务
-        task = process_slide_and_fetch_assets(
-            image_generation_service,
-            icon_finder_service,
-            slide
+        async_asset_generation_tasks.append(
+            process_slide_and_fetch_assets(
+                image_generation_service,
+                icon_finder_service,
+                slide
+            )
         )
-        async_asset_generation_tasks.append(task)
- 
 
-    # 8. 执行异步任务
-
+    # 8. 执行异步任务，获取资源URL
     async def run_async_tasks():
         try:
             generated_assets_lists = await asyncio.gather(*async_asset_generation_tasks)
@@ -117,40 +126,17 @@ if __name__ == "__main__":
             for assets_list in generated_assets_lists:
                 if assets_list:  # 确保 assets_list 不为 None
                     generated_assets.extend(assets_list)
+            logging.info(f"所有异步任务完成，共生成 {len(generated_assets)} 个资源")
             return generated_assets
         except Exception as e:
-            print(f"执行异步任务时出错: {str(e)}")
+            logging.error(f"执行异步任务时出错: {str(e)}")
             return []
+    print("-------------幻灯片内容-----------------")
+    print(slide_contents)
 
-    # 运行异步任务
-    if async_asset_generation_tasks:
-        generated_assets = asyncio.run(run_async_tasks())
-    else:
-        generated_assets = []
-
-
-    # 9. 导出演示文稿
-    try:
-        # 确保有标题
-        presentation_title = outline_standardized.get("title", "Untitled Presentation")
-        # 导出演示文稿
-        presentation_result = export_presentation(
-            presentation_id=presentation_id,
-            title=presentation_title,
-            format_type="pptx"
-        )
-        # 打印结果
-        if presentation_result:
-            result = {
-                "presentation_id": presentation_id,
-                "title": presentation_title,
-                "file_path": presentation_result.file_path if hasattr(presentation_result, 'file_path') else None,
-                "edit_path": f"/presentation?id={presentation_id}"
-            }
-            print("演示文稿导出成功:")
-            print(json.dumps(result, indent=2, ensure_ascii=False))
-        else:
-            print("演示文稿导出失败")
-            
-    except Exception as e:
-        print(f"导出演示文稿时出错: {str(e)}") 
+    asyncio.run(run_async_tasks())
+    print("-------------幻灯片内容-----------------")
+    print(slide_contents)
+    
+    # 9.内容组合导出PPT文件
+    

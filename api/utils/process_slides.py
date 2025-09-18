@@ -1,5 +1,5 @@
 import asyncio
-from typing import List, Tuple
+from typing import List, Tuple, Union
 from ..models.image_prompt import ImagePrompt
 from ..models.image_asset import ImageAsset
 
@@ -13,13 +13,13 @@ async def process_slide_and_fetch_assets(
     image_generation_service: ImageGenerationService,
     icon_finder_service: IconFinderService,
     slide: SlideModel,
-) -> List[ImageAsset]:
+) -> List[Union[ImageAsset, str]]:
 
     async_tasks = []
     # 提取图像图例路径
     image_paths = get_dict_paths_with_key(slide.content, "__image_prompt__")
     icon_paths = get_dict_paths_with_key(slide.content, "__icon_query__")
-
+ 
     # 为每个图像和图标创建异步任务，设置图像提示词和图标查询
     for image_path in image_paths:
         __image_prompt__parent = get_dict_at_path(slide.content, image_path)
@@ -32,40 +32,58 @@ async def process_slide_and_fetch_assets(
     
     for icon_path in icon_paths:
         __icon_query__parent = get_dict_at_path(slide.content, icon_path)
-        asyncio.to_thread(
+        async_tasks.append(
+            asyncio.to_thread(
                 icon_finder_service.search_icons,
                 __icon_query__parent["__icon_query__"]
             )
+        )
     # 执行所有异步任务
     results = await asyncio.gather(*async_tasks)
     results.reverse()
 
     # 设置图像和图标URL
     return_assets = []
+    
+    # 处理图像路径
     for image_path in image_paths:
+        if not results:  # 安全检查：确保results列表不为空
+            break
         image_dict = get_dict_at_path(slide.content, image_path)
         result = results.pop()
         if isinstance(result, ImageAsset):
             return_assets.append(result)
             image_dict["__image_url__"] = result.path
         else:
+            # 即使结果是URL字符串，也将其添加到return_assets列表中
+            return_assets.append(result)
             image_dict["__image_url__"] = result
         set_dict_at_path(slide.content, image_path, image_dict)
 
+    # 处理图标路径
     for icon_path in icon_paths:
+        if not results:  # 安全检查：确保results列表不为空
+            break
         icon_dict = get_dict_at_path(slide.content, icon_path)
-        icon_dict["__icon_url__"] = results.pop()[0]
+        icon_result = results.pop()
+        # 安全检查：确保icon_result是有效的并且有至少一个元素
+        if icon_result and isinstance(icon_result, list) and len(icon_result) > 0:
+            # 将图标URL也添加到return_assets列表中
+            return_assets.append(icon_result[0])
+            icon_dict["__icon_url__"] = icon_result[0]
+        else:
+            icon_dict["__icon_url__"] = ""  # 提供一个默认值
         set_dict_at_path(slide.content, icon_path, icon_dict)
 
     return return_assets
 
-    # 处理旧幻灯片和新幻灯片的内容，复用旧的图像和图标URL，减少重复请求
+# 处理旧幻灯片和新幻灯片的内容，复用旧的图像和图标URL，减少重复请求
 async def process_old_and_new_slides_and_fetch_assets(
     image_generation_service: ImageGenerationService,
     icon_finder_service: IconFinderService,
     old_slide_content: dict,
     new_slide_content: dict,
-) -> List[ImageAsset]:
+) -> List[Union[ImageAsset, str]]:
     # Finds all old images
     old_image_dict_paths = get_dict_paths_with_key(
         old_slide_content, "__image_prompt__"
@@ -158,11 +176,14 @@ async def process_old_and_new_slides_and_fetch_assets(
                 new_assets.append(fetched_image)
                 image_url = fetched_image.path
             else:
+                # 即使结果是URL字符串，也将其添加到new_assets列表中
+                new_assets.append(fetched_image)
                 image_url = fetched_image
             new_image_dicts[i]["__image_url__"] = image_url
-
     for i, new_icon in enumerate(new_icons):
         if new_icons_fetch_status[i]:
+            # 将图标URL也添加到new_assets列表中
+            new_assets.append(new_icons[i][0])
             new_icon_dicts[i]["__icon_url__"] = new_icons[i][0]
 
     for i, new_image_dict in enumerate(new_image_dicts):
@@ -170,5 +191,4 @@ async def process_old_and_new_slides_and_fetch_assets(
 
     for i, new_icon_dict in enumerate(new_icon_dicts):
         set_dict_at_path(new_slide_content, new_icon_dict_paths[i], new_icon_dict)
-
     return new_assets

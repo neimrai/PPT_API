@@ -35,8 +35,8 @@ def get_user_prompt(prompt: str, n_slides: int, language: str, content: str):
 def create_openai_client():
     logger.debug("创建OpenAI客户端")
     client = OpenAI(
-        api_key=os.getenv("DASHSCOPE_API_KEY"),
-        base_url="https://dashscope.aliyuncs.com/compatible-mode/v1",
+        api_key=os.getenv("LLM_API_KEY"),
+        base_url=os.getenv("LLM_API_BASE_URL"),
     )
     return client
 

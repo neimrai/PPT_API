@@ -17,13 +17,14 @@ logger = logging.getLogger(__name__)
 dotenv.load_dotenv()
 
 # PPT结构设计prompt
-def get_messages(layout: Dict[str, Any], n_slides: int, outline_str: str) -> List[Dict[str, str]]:
+def get_messages(layout: Dict[str, Any],n_layout:int, n_slides: int, outline_str: str) -> List[Dict[str, str]]:
     messages = [
             {'role': 'system',
             'content': f'''
               您是一位专业的演示设计师，拥有自由的创作空间来设计引人入胜的演示文稿。
               {json.dumps(layout, indent=2, ensure_ascii=False) }
-
+              # 布局概述
+              该布局包含 {n_layout} 种不同的幻灯片布局，每种布局都有独特的设计和结构。
               # 设计理念 
               - 创建视觉上引人注目且多样化的演示文稿 
               - 将布局与内容目的和受众需求相匹配 
@@ -63,8 +64,8 @@ def get_messages(layout: Dict[str, Any], n_slides: int, outline_str: str) -> Lis
 def create_openai_client():
     logger.debug("创建OpenAI客户端")
     client = OpenAI(
-        api_key=os.getenv("DASHSCOPE_API_KEY"),
-        base_url="https://dashscope.aliyuncs.com/compatible-mode/v1",
+        api_key=os.getenv("LLM_API_KEY"),
+        base_url=os.getenv("LLM_API_BASE_URL"),
     )
     return client
 
@@ -74,7 +75,7 @@ def generate_presentation_structure(outline: Dict[str, Any], layout: Dict[str, A
     client = create_openai_client()
     
     # 准备消息列表
-    messages = get_messages(layout, len(outline['slides']), outline.__str__())
+    messages = get_messages(layout,len(layout["slides"]), len(outline['slides']), outline.__str__())
     logger.debug(f"已准备提示信息，系统提示长度: {len(messages[0]['content'])}字符, 用户提示长度: {len(messages[1]['content'])}字符")
     
     logger.info("正在调用API生成PPT结构...")

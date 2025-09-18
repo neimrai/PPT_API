@@ -1,0 +1,125 @@
+[
+  {
+    "page_number": 1,
+    "title": "精品咖啡产业链概述",
+    "slide_type": "content",
+    "content": "**上游**：云南咖啡豆种植与初加工\n**中游**：烘焙、研 磨与质量检测\n**下游**：连锁咖啡门店销售\n\n云南咖啡豆产量占全国**98%以上**\n2023年精品率与精深加工率分别为**22.7%**、**54.3%**",
+    "speaker_note": "本页介绍精品咖啡产业链的各个环节，重点分析云南咖啡豆的种植与加工情况。云南咖啡豆产量占全国98%以上，2023年精品率与精深加工率分别为22.7% 和54.3%。",
+    "chart_config": {
+      "type": "pie",
+      "data": {
+        "labels": ["种植与初加工", "烘焙与研磨", "质量检测", "销售"],
+        "datasets": [
+          {
+            "label": "产业链环节",
+            "data": [30, 25, 20, 25],
+            "backgroundColor": ["#FF6B6B", "#4ECDC4", "#FFD93D", "#6A5ACD"],
+            "borderColor": ["#FF5252", "#26A69A", "#F4A261", "#483D8B"],
+            "borderWidth": 2
+          }
+        ]
+      },
+      "options": {
+        "responsive": true,
+        "plugins": {
+          "legend": {
+            "position": "top"
+          },
+          "title": {
+            "display": true,
+            "text": "精品咖啡产业链分布"
+          }
+        }
+      }
+    },
+    "__image_prompt__": "A detailed illustration of the specialty coffee supply chain, including coffee bean cultivation in Yunnan, roasting, grinding, quality testing, and retail sales in a modern coffee shop.",
+    "__icon_query__": "coffee bean, coffee roasting, coffee grinding, coffee shop"
+  },
+  {
+    "page_number": 2,
+    "title": "中国精品咖啡市场现状",
+    "content": "2023年市场规模增至**248亿元**\n\n消费者对**高品质咖啡**需求增长\n\n咖啡文化逐步普及\n\n未来市场规模或继续**强劲增长**\n\n云南咖啡豆产量占全国**98%以上**",
+    "chart_config": {
+      "type": "line",
+      "data": {
+        "labels": ["2019", "2020", "2021", "2022", "2023"],
+        "datasets": [
+          {
+            "label": "市场规模（亿元）",
+            "data": [150, 180, 210, 230, 248],
+            "backgroundColor": "#4ECDC4",
+            "borderColor": "#26A69A",
+            "borderWidth": 2
+          }
+        ]
+      },
+      "options": {
+        "responsive": true,
+        "plugins": {
+          "legend": {
+            "position": "top"
+          },
+          "title": {
+            "display": true,
+            "text": "中国精品咖啡市场规模增长趋势"
+          }
+        },
+        "scales": {
+          "y": {
+            "beginAtZero": true
+          }
+        }
+      }
+    },
+    "speaker_note": "2023年，中国精品咖啡市场规模达到248亿元，显示出强劲的增长趋势。消费者对高品质咖啡的需求不断上升，咖啡文化也在逐步普及。未来，市场规模有望继续增长。值得注意的是，云南咖啡豆产量占全国98%以上，成为中国咖啡产业的重要支柱。",
+    "__image_prompt__": "A modern coffee shop in China with customers enjoying specialty coffee, showcasing the growing coffee culture.",
+    "__icon_query__": "coffee bean icon"
+  },
+  {
+    "page_number": 3,
+    "title": "精品咖啡的未来发展趋势",
+    "content": [
+      "品牌规模化、连锁化发展",
+      "食材创新与品类融合",
+      "本土精品咖啡品牌崛起",
+      "精品咖啡进入消费者 日常生活",
+      "价格下探推动市场普及"
+    ],
+    "chart_config": {
+      "type": "bar",
+      "data": {
+        "labels": ["规模化", "多元化", "本土化", "日常化"],
+        "datasets": [
+          {
+            "label": "发展趋势",
+            "data": [80, 70, 60, 90],
+            "backgroundColor": ["#FF6B6B", "#4ECDC4", "#FFD93D", "#6A5ACD"],
+            "borderColor": ["#FF5252", "#26A69A", "#F4A261", "#483D8B"],
+            "borderWidth": 2
+          }
+        ]
+      },
+      "options": {
+        "responsive": true,
+        "plugins": {
+          "legend": {
+            "position": "top"
+          },
+          "title": {
+            "display": true,
+            "text": "精品咖啡未来发展趋势"
+          }
+        },
+        "scales": {
+          "y": {
+            "beginAtZero": true
+          }
+        }
+      }
+    },
+    "speaker_note": "总结精品咖啡行业的未来发展趋势，探讨品牌规模化、本土化及市场普及的关键因素。",
+    "__image_prompt__": "A futuristic coffee shop with modern design, showcasing various coffee blends and a diverse group of customers enjoying their drinks.",
+    "__icon_query__": "coffee future trends",
+    "__image_url__": "https://images.pexels.com/photos/3952080/pexels-photo-3952080.jpeg?auto=compress&cs=tinysrgb&h=650&w=940"
+  }
+]
