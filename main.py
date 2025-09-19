@@ -30,7 +30,7 @@ logging.basicConfig(
 )
 if __name__ == "__main__":
     
-    prompt="2025年热门悬疑作品概述"
+    prompt="养鱼知识科普"
     n_slides=10
     language="zh"
     # 1.创建PPT大纲
@@ -51,7 +51,7 @@ if __name__ == "__main__":
 
     # 3.匹配模版
     print("-------------选择的布局-----------------")
-    layout = Layouts.get_layout_by_name("test")
+    layout = Layouts.get_layout_by_name("classic")
     print(layout)
     layout_len = len(layout["slides"])
     
@@ -148,10 +148,10 @@ if __name__ == "__main__":
         print(f"创建了 {data_dir} 文件夹")
         
     # 生成HTML内容（流式输出）
-    slide_html = generate_slide_html(language, slides)
+    slide_html = generate_slide_html(language, slide_contents)
     
     # 提取并保存HTML内容
-    html_file_path = os.path.join(data_dir, "test.html")
+    html_file_path = os.path.join(data_dir, f"{prompt}.html")
     extract_and_save_html(slide_html, html_file_path)
     print(f"HTML文件已保存到: {html_file_path}")
     

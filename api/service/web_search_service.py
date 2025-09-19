@@ -20,9 +20,11 @@ class WebSearchService:
     """
 
     def __init__(self):
-        dotenv.load_dotenv()  # 移到初始化方法中
         self.base_url = 'https://yayi.wenge.com/saas-gateway/2deaeebb6f90aadd97ba018ce37465c4/analysis'
         self.url_path = '/2deaeebb6f90aadd97ba018ce37465c4/analysis'
+        # 调试输出
+        print(f"YAYI_APP_KEY: {os.getenv('YAYI_APP_KEY')}")
+        print(f"YAYI_APP_SECRET_ENV: {os.getenv('YAYI_APP_SECRET_ENV')}")
         # 获取环境变量
         self.app_key = os.getenv("YAYI_APP_KEY")
         self.app_secret = os.getenv("YAYI_APP_SECRET_ENV")
@@ -218,3 +220,11 @@ class WebSearchService:
         now = datetime.now()
         time_str = now.strftime(GMT_FORMAT)
         return time_str
+
+if __name__ == "__main__":
+    # 确保在程序开始时加载.env文件
+    dotenv.load_dotenv()
+
+    # 调试输出
+    print(f"YAYI_APP_KEY: {os.getenv('YAYI_APP_KEY')}")
+    print(f"YAYI_APP_SECRET_ENV: {os.getenv('YAYI_APP_SECRET_ENV')}")

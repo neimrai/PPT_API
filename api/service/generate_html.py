@@ -17,7 +17,7 @@ logger = logging.getLogger(__name__)
 
   
 # 读取HTML提示词文件
-system_prompt = open("api\\prompts\\HTML-prompt.md", 'r', encoding='utf-8').read()
+system_prompt = open("api\\prompts\\HTML-prompt2.md", 'r', encoding='utf-8').read()
 
 # 用户提示词
 def get_user_prompt(language, outline, response_schema=None):
@@ -28,6 +28,14 @@ def get_user_prompt(language, outline, response_schema=None):
 ## Slide Outline
 {outline}
 
+## 输出要求
+提供一个完整的、可独立运行的HTML代码。
+
+幻灯片之间使用清晰的注释 <!-- SLIDE SPLIT --> 进行分隔。
+
+代码需整洁、规范，符合标准。
+
+最终成果应兼具 SlideShare 幻灯片的美观度 和 PowerPoint 般的专业结构与稳定性。
 """
 
 def generate_slide_html(language, outline):
@@ -53,7 +61,7 @@ def generate_slide_html(language, outline):
             messages=messages,
             stream=True,
             temperature=0.3,
-            max_tokens=13000,
+            max_tokens=10000,
         )
 
         # 用于收集完整响应
