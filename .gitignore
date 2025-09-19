@@ -1,1 +1,4 @@
 node_modules
+chroma/models/
+*.onnx
+*.tar.gz

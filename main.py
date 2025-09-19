@@ -8,7 +8,7 @@ from api.service.generate_presentation_structure import generate_presentation_st
 from api.service.image_generation_service import ImageGenerationService
 from api.service.icon_finder_service import IconFinderService
 from api.service.generate_slide_content import generate_slide_content
-
+from api.service.generate_html import generate_slide_html, extract_and_save_html
 from api.utils.process_slides import process_slide_and_fetch_assets
 from api.utils.asset_directory_utils import get_exports_directory
 
@@ -137,6 +137,21 @@ if __name__ == "__main__":
     asyncio.run(run_async_tasks())
     print("-------------幻灯片内容-----------------")
     print(slide_contents)
+    print("-------------幻灯片模型-----------------")
+    print(slides)
+    # 9.内容组合导出HTML文件
     
-    # 9.内容组合导出PPT文件
+    # 确保data文件夹存在
+    data_dir = "data"
+    if not os.path.exists(data_dir):
+        os.makedirs(data_dir)
+        print(f"创建了 {data_dir} 文件夹")
+        
+    # 生成HTML内容（流式输出）
+    slide_html = generate_slide_html(language, slides)
+    
+    # 提取并保存HTML内容
+    html_file_path = os.path.join(data_dir, "test.html")
+    extract_and_save_html(slide_html, html_file_path)
+    print(f"HTML文件已保存到: {html_file_path}")
     
